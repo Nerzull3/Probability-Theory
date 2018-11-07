@@ -5,11 +5,11 @@ import pylab
 from math import sqrt
 
 
-def calculate_data(a, b, function):
+def calculate_data(a, b, function, e=0):
     dict = {}
     for k1, v1 in a.items():
         for k2, v2 in b.items():
-            key = function(k1, k2)
+            key = function(k1, k2, e)
             if key in dict:
                 dict[key] += v1 * v2
             else:
@@ -17,20 +17,28 @@ def calculate_data(a, b, function):
     return dict
 
 
-def get_sum(a, b):
+def calculate_lcm(a, b, e):
+    return lcm(a + e, a * b)
+
+
+def calculate_gcd(a, b, e):
+    return gcd(a * a, e * b)
+
+
+def get_sum(a, b, e):
     return calculate_data(a, b, lambda n1, n2: n1 + n2)
 
 
-def get_multiply(a, b):
-    return calculate_data(a, b, lambda n1, n2: n1 * n2)
+def get_multiply(a, b, e):
+    return calculate_data(a, b, lambda n1, n2, e: n1 * n2)
 
 
-def get_gcd(a, b):
-    return calculate_data(a, b, gcd)
+def get_gcd(a, b, e):
+    return calculate_data(a, b, calculate_gcd, e)
 
 
-def get_lcm(a, b):
-    return calculate_data(a, b, lcm)
+def get_lcm(a, b, e):
+    return calculate_data(a, b, calculate_lcm, e)
 
 
 def gcd(a, b):
@@ -72,7 +80,7 @@ def get_standart_deviation(distribution):
 
 
 def get_covariance(distribution1, distribution2):
-    return get_expv(get_multiply(distribution1, distribution2)) - get_expv(distribution1) * get_expv(distribution2)
+    return get_expv(get_multiply(distribution1, distribution2, 0)) - get_expv(distribution1) * get_expv(distribution2)
 
 
 def get_correlation(distribution1, distribution2):
@@ -113,8 +121,7 @@ def create_graphic(data):
     keys.sort()
     values = [round(data[key].numerator / data[key].denominator, 5) for key in keys]
     values_for_graphic = list(itertools.accumulate(values))
-
-    pylab.xlim(0, 252)
+    pylab.xlim(0, max(keys))
     pylab.ylim(0, 1.01)
     plt.grid(True)
     min_coef = 0
@@ -124,17 +131,15 @@ def create_graphic(data):
         max_coef = keys[i + 1] / keys[-1]
         pylab.axhline(xmin=min_coef, xmax=max_coef, y=values_for_graphic[i], color='r')
         min_coef = max_coef
-    pylab.axhline(xmin=0 + min_coef, xmax=1, y=1, color='r')
+    pylab.axhline(xmin=min_coef, xmax=1, y=1, color='r')
     plt.show()
 
 
-def check_on_equals_1(sum, multiple, distribution, operation1, operation2, operation3):
+def check_on_equals_1(distribution, operation):
     print()
     print('############ ПРОВЕРКИ НА РАВЕНСТВО ЕДИНИЦЕ #############')
     print()
-    print(f'Проверим {operation1}: 1 == {list(itertools.accumulate(sum.values()))[-1].limit_denominator()}')
-    print(f'Проверим {operation2}: 1 == {list(itertools.accumulate(multiple.values()))[-1].limit_denominator()}')
-    print(f'Проверим {operation3}: 1 == {list(itertools.accumulate(distribution.values()))[-1].limit_denominator()}')
+    print(f'Проверим {operation}: 1 == {list(itertools.accumulate(distribution.values()))[-1].limit_denominator()}')
     print()
     print('########################################################')
     print()
@@ -184,20 +189,12 @@ def print_covariance_and_correlation(distribution_1, distribution_2, formula_1, 
     print('\n########################################################\n')
 
 
-def func_for_my_task(m, n, e, print_results):
+def func_for_my_task(m, n, e, print_results, draw_graphic):
     """ lcm(m + e, m * n)"""
 
     print('\n################### РАСПРЕДЕЛЕНИЯ ######################\n')
 
-    sum = get_sum(m, e)
-    print(f'Распределение \"m + {[i for i in e.keys()][0]}\":')
-    print_distribution(sum)
-
-    multiple = get_multiply(m, n)
-    print(f'Распределение \"m * n\":')
-    print_distribution(multiple)
-
-    result_lcm = get_lcm(sum, multiple)
+    result_lcm = get_lcm(m, n, list(e.keys())[0])
     distribution = convert_fractions(result_lcm)
     print(f'Распределение \"LCM(m + {[i for i in e.keys()][0]}, m * n)\":')
     print_distribution(result_lcm)
@@ -205,26 +202,18 @@ def func_for_my_task(m, n, e, print_results):
     print('\n########################################################\n')
 
     if print_results:
-        check_on_equals_1(sum, multiple, distribution, 'сумму', 'произведение', 'НОК')
-        print_information(distribution, draw_graphic=False)
+        check_on_equals_1(distribution, 'НОК')
+        print_information(distribution, draw_graphic)
 
     return distribution
 
 
-def func_for_other_task(m, n, e, print_results):
+def func_for_other_task(m, n, e, print_results, draw_graphic):
     """ gcd(m ^ 2, e * n)"""
 
     print('\n################### РАСПРЕДЕЛЕНИЯ ######################\n')
 
-    squared_distribution = {k**2: v for k, v in m.items()}
-    print(f'Распределение \"m ^ 2\":')
-    print_distribution(squared_distribution)
-
-    multiple = get_multiply(n, e)
-    print(f'Распределение \"{[i for i in e.keys()][0]} * n\":')
-    print_distribution(multiple)
-
-    result_gcd = get_gcd(squared_distribution, multiple)
+    result_gcd = get_gcd(m, n, list(e.keys())[0])
     distribution = convert_fractions(result_gcd)
     print(f'Распределение \"GCD(m ^ 2, {[i for i in e.keys()][0]} * n)\":')
     print_distribution(result_gcd)
@@ -232,14 +221,14 @@ def func_for_other_task(m, n, e, print_results):
     print('\n########################################################\n')
 
     if print_results:
-        check_on_equals_1(squared_distribution, multiple, distribution, 'квадрат', 'произведение', 'НОД')
-        print_information(distribution, draw_graphic=False)
+        check_on_equals_1(distribution, 'НОД')
+        print_information(distribution, draw_graphic)
 
     return distribution
 
 
 helper = """
-Код вычисляет много чего с точностью до 5 знака после запятой СВ указанных формул: 
+Код вычисляет характеристики СВ с точностью до 5 знака после запятой СВ указанных формул: 
         О=lcm(m + e, m * n), О=gcd(m ^ 2, e * n), где m и n - СВ, e - константа.
 
 Правила ввода: все значения вводятся через пробел. Сколько значений СВ, столько и вероятностей этих СВ.
@@ -289,8 +278,8 @@ if __name__ == '__main__':
     e_2 = convert_fractions({e_2[i]: Fraction(e_p[i]) for i in range(len(e_2))})
 
     print_start_data(m, n)
-    distribution_1 = func_for_my_task(m, n, e_1, print_results=True)
-    distribution_2 = func_for_other_task(m, n, e_2, print_results=False)
+    distribution_1 = func_for_my_task(m, n, e_1, print_results=True, draw_graphic=True)
+    distribution_2 = func_for_other_task(m, n, e_2, print_results=False, draw_graphic=False)
 
     print_covariance_and_correlation(
         distribution_1,
