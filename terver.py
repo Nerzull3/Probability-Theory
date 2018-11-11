@@ -5,11 +5,11 @@ import pylab
 from math import sqrt
 
 
-def calculate_data(a, b, function, e=0):
+def calculate_data(a, b, function):
     dict = {}
     for k1, v1 in a.items():
         for k2, v2 in b.items():
-            key = function(k1, k2, e)
+            key = function(k1, k2)
             if key in dict:
                 dict[key] += v1 * v2
             else:
@@ -17,28 +17,36 @@ def calculate_data(a, b, function, e=0):
     return dict
 
 
-def calculate_lcm(a, b, e):
-    return lcm(a + e, a * b)
+def calculate_lcm(a, b):
+    return lcm(a + 2, a * b)
 
 
-def calculate_gcd(a, b, e):
-    return gcd(a * a, e * b)
+def calculate_gcd(a, b):
+    return gcd(a * a, 3 * b)
 
 
-def get_sum(a, b, e):
-    return calculate_data(a, b, lambda n1, n2: n1 + n2)
+def calculate_lcm_multiply_gcd(a, b):
+    return calculate_lcm(a, b) * calculate_gcd(a, b)
 
 
-def get_multiply(a, b, e):
-    return calculate_data(a, b, lambda n1, n2, e: n1 * n2)
+def get_sum(m, n):
+    return calculate_data(m, n, lambda n1, n2: n1 + n2)
 
 
-def get_gcd(a, b, e):
-    return calculate_data(a, b, calculate_gcd, e)
+def get_composition(m, n):
+    return calculate_data(m, n, lambda n1, n2: n1 * n2)
 
 
-def get_lcm(a, b, e):
-    return calculate_data(a, b, calculate_lcm, e)
+def get_gcd(m, n):
+    return calculate_data(m, n, calculate_gcd)
+
+
+def get_lcm(m, n):
+    return calculate_data(m, n, calculate_lcm)
+
+
+def get_lcm_multiply_gcd(m, n):
+    return calculate_data(m, n, calculate_lcm_multiply_gcd)
 
 
 def gcd(a, b):
@@ -79,12 +87,12 @@ def get_standart_deviation(distribution):
     return sqrt(get_dispersion(distribution))
 
 
-def get_covariance(distribution1, distribution2):
-    return get_expv(get_multiply(distribution1, distribution2, 0)) - get_expv(distribution1) * get_expv(distribution2)
+def get_covariance(distribution1, distribution2, composition):
+    return get_expv(composition) - get_expv(distribution1) * get_expv(distribution2)
 
 
-def get_correlation(distribution1, distribution2):
-    return get_covariance(distribution1, distribution2) / \
+def get_correlation(distribution1, distribution2, composition):
+    return get_covariance(distribution1, distribution2, composition) / \
            (get_standart_deviation(distribution1) * get_standart_deviation(distribution2))
 
 
@@ -177,26 +185,26 @@ def print_information(distribution, draw_graphic):
         create_graphic(distribution)
 
 
-def print_covariance_and_correlation(distribution_1, distribution_2, formula_1, formula_2):
+def print_covariance_and_correlation(distribution_1, distribution_2, composition, formula_1, formula_2):
     print('\n###################### КОВАРИАЦИЯ #######################\n')
 
-    covariance = get_covariance(distribution_1, distribution_2)
-    print(f'Ковариация {formula_1} и {formula_2} равна: {covariance}')
+    covariance = get_covariance(distribution_1, distribution_2, composition)
+    print(f'Ковариация {formula_1} и {formula_2} равна: {covariance.numerator / covariance.denominator}')
 
-    correlation = get_correlation(distribution_1, distribution_2)
+    correlation = get_correlation(distribution_1, distribution_2, composition)
     print(f'Корреляция {formula_1} и {formula_2} равна: {correlation}')
 
     print('\n########################################################\n')
 
 
-def func_for_my_task(m, n, e, print_results, draw_graphic):
-    """ lcm(m + e, m * n)"""
+def func_for_my_task(m, n, print_results, draw_graphic):
+    """ lcm(m + 2, m * n)"""
 
     print('\n################### РАСПРЕДЕЛЕНИЯ ######################\n')
 
-    result_lcm = get_lcm(m, n, list(e.keys())[0])
+    result_lcm = get_lcm(m, n)
     distribution = convert_fractions(result_lcm)
-    print(f'Распределение \"LCM(m + {[i for i in e.keys()][0]}, m * n)\":')
+    print(f'Распределение \"LCM(m + 2, m * n)\":')
     print_distribution(result_lcm)
 
     print('\n########################################################\n')
@@ -208,14 +216,14 @@ def func_for_my_task(m, n, e, print_results, draw_graphic):
     return distribution
 
 
-def func_for_other_task(m, n, e, print_results, draw_graphic):
-    """ gcd(m ^ 2, e * n)"""
+def func_for_other_task(m, n, print_results, draw_graphic):
+    """ gcd(m ^ 2, 3 * n)"""
 
     print('\n################### РАСПРЕДЕЛЕНИЯ ######################\n')
 
-    result_gcd = get_gcd(m, n, list(e.keys())[0])
+    result_gcd = get_gcd(m, n)
     distribution = convert_fractions(result_gcd)
-    print(f'Распределение \"GCD(m ^ 2, {[i for i in e.keys()][0]} * n)\":')
+    print(f'Распределение \"GCD(m ^ 2, 3 * n)\":')
     print_distribution(result_gcd)
 
     print('\n########################################################\n')
@@ -228,8 +236,8 @@ def func_for_other_task(m, n, e, print_results, draw_graphic):
 
 
 helper = """
-Код вычисляет характеристики СВ с точностью до 5 знака после запятой СВ указанных формул: 
-        О=lcm(m + e, m * n), О=gcd(m ^ 2, e * n), где m и n - СВ, e - константа.
+Код вычисляет характеристики СВ с точностью до 5 знака после запятой указанных формул: 
+        О=lcm(m + 2, m * n), О=gcd(m ^ 2, 3 * n), где m и n - СВ.
 
 Правила ввода: все значения вводятся через пробел. Сколько значений СВ, столько и вероятностей этих СВ.
 
@@ -238,8 +246,6 @@ helper = """
 1/6 1/6 1/6 1/6 1/6 1/6         # распределение m
 1 2 3 4 5 6                     # значения n
 1/12 1/12 1/3 1/3 1/12 1/12     # распределение n
-2                               # значение константы e_1
-3                               # значение константы e_2
 
 ######################## Пояснения к коду! ###########################
 
@@ -268,34 +274,32 @@ if __name__ == '__main__':
     m_p = str2fraction(input('Введите начальное распределение m через пробел: '))
     n = list(map(int, input('Введите значения СВ n через пробел: ').split()))
     n_p = str2fraction(input('Введите начальное распределение n через пробел: '))
-    e_1 = list(map(int, input('Введите константу для ф-лы О=lcm(m + e, m * n), записав одно число: ').split()))  # конст
-    e_2 = list(map(int, input('Введите константу для ф-лы О=gcd(m ^ 2, e * n), записав одно число: ').split()))  # конст
-    e_p = [1]  # распределение константы
 
     m = convert_fractions({m[i]: Fraction(m_p[i]) for i in range(len(m))})
     n = convert_fractions({n[i]: Fraction(n_p[i]) for i in range(len(n))})
-    e_1 = convert_fractions({e_1[i]: Fraction(e_p[i]) for i in range(len(e_1))})
-    e_2 = convert_fractions({e_2[i]: Fraction(e_p[i]) for i in range(len(e_2))})
 
     print_start_data(m, n)
-    distribution_1 = func_for_my_task(m, n, e_1, print_results=True, draw_graphic=True)
-    distribution_2 = func_for_other_task(m, n, e_2, print_results=False, draw_graphic=False)
+    distribution_1 = func_for_my_task(m, n, print_results=False, draw_graphic=False)
+    distribution_2 = func_for_other_task(m, n, print_results=False, draw_graphic=False)
+
+    composition = get_lcm_multiply_gcd(m, n)
+    print(f'Распределение LCM(m + 2, m * n) * GCD(m ^ 2, 3 * n):')
+    print_distribution(composition)
+    check_on_equals_1(composition, f'LCM(m + 2, m * n) * GCD(m ^ 2, 3 * n)')
 
     print_covariance_and_correlation(
-        distribution_1,
-        distribution_2,
-        f'LCM(m + {[i for i in e_1.keys()][0]}, m * n)',
-        f'GCD(m ^ 2, {[i for i in e_2.keys()][0]} * n)'
+        get_lcm(m, n),
+        get_gcd(m, n),
+        composition,
+        f'LCM(m + 2, m * n)',
+        f'GCD(m ^ 2, 3 * n)'
     )
 
-"""
+    """
     # Для дебага:
 
     m = [1, 2, 3, 4, 5, 6]
     n = [1, 2, 3, 4, 5, 6]
-    e_1 = [2]
-    e_2 = [3]
-    e_p = [1]
     m_p = [1/6, 1/6, 1/6, 1/6, 1/6, 1/6]
     n_p = [1/12, 1/12, 1/3, 1/3, 1/12, 1/12]
     """
